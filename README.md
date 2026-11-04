@@ -1,6 +1,72 @@
 # Campus Outing System — Laravel
 
-Already configured on this computer: run `./scripts/local.sh start` and open **http://127.0.0.1:8000**. See [local setup and demo accounts](docs/LOCAL.md).
+## Run locally on Hizal's computer
+
+The application is already configured at `/home/hizal/larping/outing-system-test`. Open Konsole and run:
+
+```sh
+cd /home/hizal/larping/outing-system-test
+./scripts/local.sh start
+```
+
+Open **[http://127.0.0.1:8000](http://127.0.0.1:8000)** in your browser. The launcher starts the isolated MariaDB database, Laravel web server and scheduler, waits for readiness, and runs the application's audit. You can close Konsole after startup; these user services continue running while your user session remains active.
+
+### Check status or stop
+
+Run these from the project folder:
+
+```sh
+# Check the database, website and scheduler services
+./scripts/local.sh status
+
+# Stop the Outing System services; saved data is retained
+./scripts/local.sh stop
+```
+
+Services are not configured to start automatically at login. Run the start command again when needed. For normal daily use, you do not need to recreate the database, rerun migrations, seed accounts, or run `php artisan serve` separately.
+
+### Demo logins
+
+These accounts were created in the local development database:
+
+| Role | Login ID | Password |
+|---|---|---|
+| Admin | `ADM001` | `Staff@123` |
+| Warden | `STF001` | `Staff@123` |
+| Guard | `GRD001` | `Staff@123` |
+| Student | `2026000001`–`2026000005` | `Student@123` |
+
+Student `2026000002` must change their password at first login. These are development accounts; do not use their shared passwords for a public deployment.
+
+### Local configuration
+
+| Component | Configured value |
+|---|---|
+| Website | `http://127.0.0.1:8000` |
+| Database server | MariaDB at `127.0.0.1:33306` |
+| Database name | `outing_system_local` |
+| Runtime and persistent database files | `~/.local/share/outing-system/` |
+| Service logs | `~/.local/share/outing-system/logs/` |
+| Application and email logs | `storage/logs/laravel.log` |
+| Email | Log transport; no external email is sent |
+
+Database credentials are stored in the Git-ignored `.env`. Keep that file and the private runtime directory out of Git. This isolated stack does not require changes to the Company Training project's configuration.
+
+For diagnostics using this stack's bundled PHP and Composer:
+
+```sh
+./scripts/local.sh artisan migrate:status
+./scripts/local.sh artisan outing:audit
+./scripts/local.sh composer check-platform-reqs
+```
+
+If startup fails, check `./scripts/local.sh status` and the service logs. The launcher refuses to take over an occupied port and does not stop unrelated listeners.
+
+**This launcher uses runtime files and systemd user services already installed on Hizal's computer. Cloning the repository onto another computer does not install them.** For another computer, follow [Requirements](#requirements) and [New installation](#new-installation) below. Do not copy private credentials or database files into the repository.
+
+See [LOCAL.md](docs/LOCAL.md) for the full local setup record.
+
+## About the project
 
 The PHP/MySQL application is migrated to Laravel **13** (locked at 13.40.0), with the original Poppins/Metronic-compatible theme, page markup, navigation, terminology and assets. No starter kit or frontend framework is used. Existing `.php` page URLs are Laravel routes. Wardens approve, guards record movements, and admins manage accounts, reports, imports, photos and settings.
 
@@ -86,5 +152,3 @@ Serve only `public/index.php` as executable PHP. [deploy/nginx.conf](deploy/ngin
 See [TESTING.md](docs/TESTING.md) for actual results, test commands, concurrency/upgrade safeguards and browser limitations; [VISUALS.md](docs/VISUALS.md) for before/after screenshots; [CHANGES.md](docs/CHANGES.md) for bug fixes and affected files; and [INSPECTION.md](docs/INSPECTION.md) for permissions, states and relationships.
 
 The original repository did not include a license. Theme/image licensing has not been changed by this migration.
-# outing-system-fixed
-# outing-system-fixed
