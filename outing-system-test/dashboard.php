@@ -120,6 +120,7 @@ $curfewNow = is_within_curfew();
                         <tr>
                             <th>Student</th>
                             <th>Destination</th>
+                            <th>Coming from</th>
                             <th>Expected return</th>
                             <th>Submitted</th>
                         </tr>
@@ -128,7 +129,8 @@ $curfewNow = is_within_curfew();
                         <?php foreach ($pendingPreview as $r): ?>
                             <tr>
                                 <td><?= h($r['std_name']) ?> (<?= h($r['std_no']) ?>)</td>
-                                <td><?= h($r['destination']) ?></td>
+                                <td><?= h($r['destination'] ?? '') ?></td>
+                                <td><?= h($r['coming_from'] ?? '') ?></td>
                                 <td><?= h($r['expected_return_at']) ?></td>
                                 <td><?= h($r['created_at']) ?></td>
                             </tr>
@@ -151,6 +153,7 @@ $curfewNow = is_within_curfew();
                             <th>Student</th>
                             <th>Type</th>
                             <th>Destination</th>
+                            <th>Coming from</th>
                             <th>Expected return</th>
                             <th>Status</th>
                         </tr>
@@ -160,7 +163,8 @@ $curfewNow = is_within_curfew();
                             <tr<?= $r['status'] === 'overdue' ? ' class="row-flag"' : '' ?>>
                                 <td><?= h($r['std_name']) ?> (<?= h($r['std_no']) ?>)</td>
                                 <td><?= h(request_type_label($r['type'])) ?></td>
-                                <td><?= h($r['destination']) ?></td>
+                                <td><?= h($r['destination'] ?? '') ?></td>
+                                <td><?= h($r['coming_from'] ?? '') ?></td>
                                 <td><?= h($r['expected_return_at']) ?></td>
                                 <td><?= h(status_label($r['status'])) ?></td>
                             </tr>
@@ -192,7 +196,7 @@ $curfewNow = is_within_curfew();
                             <tr>
                                 <td><?= h($a['std_name']) ?> (<?= h($a['std_no']) ?>)</td>
                                 <td><?= $a['action'] === 'checked_out' ? 'Checked out' : 'Checked in' ?></td>
-                                <td><?= $a['track'] === 'special' ? 'Special' : 'Standard' ?></td>
+                                <td><?= match ($a['track']) { 'special' => 'Special', 'standard_arrival' => 'Standard (arrival permission used)', default => 'Standard' } ?></td>
                                 <td><?= h($a['staff_id'] ?? '') ?></td>
                                 <td><?= h($a['activity_at']) ?></td>
                             </tr>

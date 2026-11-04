@@ -39,6 +39,7 @@ $requests = get_student_requests($_SESSION['std_no']);
                 <thead>
                     <tr>
                         <th>Destination</th>
+                        <th>Coming from</th>
                         <th>Reason</th>
                         <th>Out at</th>
                         <th>Expected return</th>
@@ -50,7 +51,8 @@ $requests = get_student_requests($_SESSION['std_no']);
                 <tbody>
                     <?php foreach ($requests as $r): ?>
                         <tr>
-                            <td><?= h($r['destination']) ?></td>
+                            <td><?= h($r['destination'] ?? '') ?></td>
+                            <td><?= h($r['coming_from'] ?? '') ?></td>
                             <td><?= h($r['reason']) ?></td>
                             <td><?= h($r['requested_out_at']) ?></td>
                             <td><?= h($r['expected_return_at']) ?></td>
@@ -58,6 +60,9 @@ $requests = get_student_requests($_SESSION['std_no']);
                             <td>
                                 <?php if ($r['status'] === 'rejected' && $r['rejection_reason']): ?>
                                     Rejected: <?= h($r['rejection_reason']) ?>
+                                <?php endif; ?>
+                                <?php if ($r['status'] === 'expired'): ?>
+                                    Not reviewed by staff in time. You will not be marked late for this arrival.
                                 <?php endif; ?>
                             </td>
                             <td>

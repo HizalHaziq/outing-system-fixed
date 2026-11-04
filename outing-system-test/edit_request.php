@@ -28,7 +28,7 @@ $type = $request['type'];
 $error = '';
 $values = [
     'reason'             => $request['reason'],
-    'destination'        => $request['destination'],
+    'destination'        => $type === 'checkin' ? ($request['coming_from'] ?? '') : ($request['destination'] ?? ''),
     'requested_out_at'   => $request['requested_out_at'] ? to_datetime_local($request['requested_out_at']) : '',
     'expected_return_at' => $request['expected_return_at'] ? to_datetime_local($request['expected_return_at']) : '',
 ];
@@ -83,40 +83,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <main class="form-page">
         <h1>Edit outing request</h1>
         <p><?= h(request_type_label($type)) ?></p>
-        <p>Current time: <?php require 'clock_widget.php'; ?></p>
+        <p>Current time: <?php $clock_inline = true; require 'clock_widget.php'; ?></p>
 
         <?php if ($error !== ''): ?>
             <p class="form-error"><?= h($error) ?></p>
         <?php endif; ?>
 
-        <fieldset>
-            <form method="post" action="edit_request.php?id=<?= $id ?>">
+        <fieldset class="form-card">
+            <form method="post" action="edit_request.php?id=<?= $id ?>" class="request-form">
                 <?= csrf_field() ?>
                 <input type="hidden" name="id" value="<?= $id ?>">
-                <label>
+                <label class="form-field">
                     <?= h(destination_field_label($type)) ?>
                     <input type="text" name="destination" maxlength="255" value="<?= h($values['destination']) ?>" required>
                 </label>
-                <br>
-                <label>
+                <label class="form-field">
                     Reason
                     <input type="text" name="reason" maxlength="255" value="<?= h($values['reason']) ?>" required>
                 </label>
-                <br>
                 <?php if ($type === 'checkout'): ?>
-                    <label>
+                    <label class="form-field">
                         What time do you need to leave?
                         <input type="datetime-local" name="requested_out_at" value="<?= h($values['requested_out_at']) ?>" required>
                     </label>
                 <?php else: ?>
-                    <label>
+                    <label class="form-field">
                         What time do you expect to arrive back?
                         <input type="datetime-local" name="expected_return_at" value="<?= h($values['expected_return_at']) ?>" required>
                     </label>
                 <?php endif; ?>
-                <br>
-                <button type="submit">Save changes</button>
-                <a href="my_requests.php">Cancel</a>
+                <div class="form-actions">
+                    <button type="submit">Save changes</button>
+                    <a href="my_requests.php" class="btn-secondary">Cancel</a>
+                </div>
             </form>
         </fieldset>
     </main>

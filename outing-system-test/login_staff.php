@@ -53,10 +53,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <div class="lg-card">
-            <div class="lg-tabs">
-                <a class="lg-tab is-active" href="login_staff.php">Staff</a>
-                <a class="lg-tab" href="login_student.php">Student</a>
+
+            <!-- TEST ONLY: login toggle. Remove this whole block before go-live. -->
+            <div style="display:flex;border-bottom:1px solid #e2dbe9;font-size:14px;font-weight:600;">
+                <a href="login_student.php" style="flex:1;text-align:center;padding:12px;text-decoration:none;background:#f3edf7;color:#5b1a8b;">Student</a>
+                <a href="login_staff.php" style="flex:1;text-align:center;padding:12px;text-decoration:none;background:#5b1a8b;color:#fff;">Staff</a>
             </div>
+            <!-- /TEST ONLY -->
 
             <div class="lg-body">
                 <h1>Staff login</h1>

@@ -34,16 +34,7 @@ body {
   border: 1px solid var(--lg-border);
   box-shadow: 0 18px 50px rgba(69, 16, 107, .18);
 }
-.lg-tabs { display: flex; background: #ece8f0; }
-.lg-tab {
-  flex: 1; text-align: center; padding: 16px 0; text-decoration: none;
-  font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
-  color: #4a3f55; border-bottom: 3px solid transparent;
-}
-.lg-tab:hover { background: #e4dfea; }
-.lg-tab.is-active { background: #fff; color: var(--lg-text); border-bottom-color: var(--lg-accent); }
-
-.lg-body { padding: 28px 28px 26px; }
+.lg-body { padding: 32px 28px 26px; }
 .lg-body h1 { margin: 0 0 18px; font-size: 20px; }
 .lg-error {
   margin: 0 0 16px; padding: 10px 12px; border-radius: 8px; font-size: 14px;

@@ -19,6 +19,7 @@ const SETTING_DEFAULTS = [
     'curfew_start'              => '23:00:00',
     'curfew_end'                => '06:00:00',
     'special_tolerance_minutes' => '15',
+    'arrival_review_lead_minutes' => '30',
     'qr_refresh_seconds'        => '30',
     'allow_manual_gate_entry'   => '1',
 ];
@@ -40,6 +41,13 @@ const SETTING_META = [
         'type'  => 'number',
         'help'  => 'Grace period after a special request\'s agreed/expected time before it counts as a violation or gets flagged overdue.',
         'min'   => 0,
+    ],
+    'arrival_review_lead_minutes' => [
+        'label' => 'Arrival request review deadline (minutes before arrival)',
+        'type'  => 'number',
+        'help'  => 'Staff should decide an arrival request this many minutes before the student\'s expected arrival. After that it expires and can no longer be approved; the student is not penalised. A request made too close to the arrival time gets this many minutes from when it was submitted.',
+        'min'   => 0,
+        'max'   => 720,
     ],
     'qr_refresh_seconds' => [
         'label' => 'QR refresh interval (seconds)',
@@ -79,6 +87,12 @@ function get_setting(string $key): string
 function special_tolerance_minutes(): int
 {
     return max(0, (int) get_setting('special_tolerance_minutes'));
+}
+
+/** Minutes before expected arrival by which staff should decide an arrival request. */
+function arrival_review_lead_minutes(): int
+{
+    return max(0, (int) get_setting('arrival_review_lead_minutes'));
 }
 
 /** Current value of every known setting, with its label/type/help -- for the settings page. */

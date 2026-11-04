@@ -85,7 +85,16 @@ function standard_check_in(int $id, string $stdNo, string $guardId, string $gate
         $ok = $stmt->rowCount() > 0;
 
         if ($ok && $approval) {
-            fulfill_checkin_approval($pdo, (int) $approval['id'], $stdNo, $guardId, $gateLocation);
+            if (fulfill_checkin_approval($pdo, (int) $approval['id'], $stdNo, $guardId, $gateLocation)) {
+                // Remember which approval this check-in used so history
+                // shows ONE outing, not a standard row plus an arrival row.
+                $pdo->prepare('UPDATE standard_outing SET arrival_request_id = :rid WHERE id = :id')
+                    ->execute(['rid' => (int) $approval['id'], 'id' => $id]);
+            }
+        }
+
+        if ($ok) {
+            cancel_leftover_arrival_requests($pdo, $stdNo);
         }
 
         if ($ok && $isLate) {
@@ -108,6 +117,14 @@ function standard_check_in(int $id, string $stdNo, string $guardId, string $gate
         $pdo->rollBack();
         throw $e;
     }
+}
+
+/** True if this standard outing's check-in consumed an arrival permission. */
+function standard_checkin_used_arrival(int $id): bool
+{
+    $stmt = get_db()->prepare('SELECT arrival_request_id IS NOT NULL FROM standard_outing WHERE id = :id');
+    $stmt->execute(['id' => $id]);
+    return (bool) $stmt->fetchColumn();
 }
 
 /** Everyone currently out via the standard track. */

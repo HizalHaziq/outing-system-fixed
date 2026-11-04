@@ -59,7 +59,9 @@ function notify_request_reviewed(array $request): void
             ? 'Your outing request has been approved.'
             : 'Your outing request has been rejected.',
         '',
-        "Destination: {$request['destination']}",
+        (($request['type'] ?? 'checkout') === 'checkin'
+            ? "Coming from: {$request['coming_from']}"
+            : "Destination: {$request['destination']}"),
         "Reason: {$request['reason']}",
         "Requested out: {$request['requested_out_at']}",
         "Expected return: {$request['expected_return_at']}",

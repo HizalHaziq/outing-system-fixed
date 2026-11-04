@@ -34,7 +34,7 @@ require_once PRIVATE_LIB . '/ui_helpers.php';
                     <div id="notifDropdown" style="display:none;position:absolute;right:0;top:calc(100% + 10px);width:320px;max-width:calc(100vw - 24px);max-height:420px;overflow-y:auto;background:#ffffff;border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,0.22);z-index:200;color:#24152f;">
                         <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid #e2dbe9;font-weight:600;font-size:13.5px;background:#ffffff;color:#24152f;">
                             <span>Notifications</span>
-                            <button id="notifMarkAllRead" type="button" style="background:none;border:none;color:#5b1a8b;font-size:12px;cursor:pointer;padding:0;">Mark all read</button>
+                            <button id="notifClearAll" type="button" style="background:none;border:none;color:#5b1a8b;font-size:12px;cursor:pointer;padding:0;">Clear all</button>
                         </div>
                         <div id="notifList" style="padding:4px 0;">
                             <p style="padding:20px 14px;text-align:center;color:#7a6d86;font-size:13px;margin:0;">Loading&hellip;</p>
@@ -60,7 +60,8 @@ require_once PRIVATE_LIB . '/ui_helpers.php';
     var dropdown  = document.getElementById('notifDropdown');
     var badge     = document.getElementById('notifBadge');
     var list      = document.getElementById('notifList');
-    var markAll   = document.getElementById('notifMarkAllRead');
+    var clearAll  = document.getElementById('notifClearAll');
+    var shownUnreadIds = []; // unread items currently displayed; marked read when the dropdown closes
 
     function escapeHtml(s) {
         var d = document.createElement('div');
@@ -86,6 +87,8 @@ require_once PRIVATE_LIB . '/ui_helpers.php';
         fetch('get_notifications.php')
             .then(function (r) { return r.json(); })
             .then(function (items) {
+                shownUnreadIds = items.filter(function (n) { return n.is_read == 0; })
+                                      .map(function (n) { return n.id; });
                 if (!items.length) {
                     list.innerHTML = '<p style="padding:20px 14px;text-align:center;color:#7a6d86;font-size:13px;margin:0;">No notifications</p>';
                     return;
@@ -98,7 +101,6 @@ require_once PRIVATE_LIB . '/ui_helpers.php';
                         + '<span style="color:#7a6d86;font-size:11.5px;">' + escapeHtml(n.created_at_label) + '</span>'
                         + '</div>'
                         + '<span style="display:flex;gap:6px;flex-shrink:0;">'
-                        + (n.is_read == 0 ? '<button class="notif-read-btn" title="Mark read" style="background:none;border:none;cursor:pointer;color:#7a6d86;font-size:12px;">&#10003;</button>' : '')
                         + '<button class="notif-delete-btn" title="Delete" style="background:none;border:none;cursor:pointer;color:#7a6d86;font-size:12px;">&#10005;</button>'
                         + '</span>'
                         + '</div>';
@@ -109,24 +111,42 @@ require_once PRIVATE_LIB . '/ui_helpers.php';
             });
     }
 
-    function notifAction(action, id) {
+    function notifAction(action, id, ids) {
         return fetch('notification_action.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: 'action=' + encodeURIComponent(action)
                 + '&id=' + encodeURIComponent(id || '')
+                + '&ids=' + encodeURIComponent((ids || []).join(','))
                 + '&csrf_token=' + encodeURIComponent(CSRF_TOKEN)
         });
     }
 
+    function openDropdown() {
+        dropdown.style.display = 'block';
+        loadNotifications();
+    }
+
+    // Closing the dropdown marks what was shown as read and clears the badge.
+    function closeDropdown() {
+        if (dropdown.style.display !== 'block') return;
+        dropdown.style.display = 'none';
+        var ids = shownUnreadIds;
+        shownUnreadIds = [];
+        if (ids.length) {
+            badge.style.display = 'none';
+            notifAction('mark_read_many', null, ids).then(refreshUnreadCount);
+        }
+    }
+
     bellBtn.addEventListener('click', function () {
-        var isOpen = dropdown.style.display === 'block';
-        dropdown.style.display = isOpen ? 'none' : 'block';
-        if (!isOpen) loadNotifications();
+        if (dropdown.style.display === 'block') closeDropdown();
+        else openDropdown();
     });
 
-    markAll.addEventListener('click', function () {
-        notifAction('mark_all_read').then(function () {
+    clearAll.addEventListener('click', function () {
+        notifAction('clear_all').then(function () {
+            shownUnreadIds = [];
             loadNotifications();
             refreshUnreadCount();
         });
@@ -136,12 +156,6 @@ require_once PRIVATE_LIB . '/ui_helpers.php';
         var item = e.target.closest('.notif-item');
         if (!item) return;
         var id = item.getAttribute('data-id');
-        if (e.target.classList.contains('notif-read-btn')) {
-            notifAction('mark_read', id).then(function () {
-                loadNotifications();
-                refreshUnreadCount();
-            });
-        }
         if (e.target.classList.contains('notif-delete-btn')) {
             notifAction('delete', id).then(function () {
                 loadNotifications();
@@ -152,8 +166,11 @@ require_once PRIVATE_LIB . '/ui_helpers.php';
 
     document.addEventListener('click', function (e) {
         if (!bellBtn.contains(e.target) && !dropdown.contains(e.target)) {
-            dropdown.style.display = 'none';
+            closeDropdown();
         }
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeDropdown();
     });
 
     refreshUnreadCount();

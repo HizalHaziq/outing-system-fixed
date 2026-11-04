@@ -8,6 +8,7 @@ require_once PRIVATE_LIB . '/ui_helpers.php';
 require_student();
 
 $error = '';
+$isOut = student_is_out($_SESSION['std_no']);
 $values = [
     'type' => 'checkout',
     'reason' => '',
@@ -20,6 +21,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_valid_csrf();
 
     $values['type']                = ($_POST['type'] ?? '') === 'checkin' ? 'checkin' : 'checkout';
+    if ($values['type'] === 'checkin' && !$isOut) {
+        $values['type'] = 'checkout'; // re-show the form; create_outing_request() also rejects it
+        $error = 'You can only request arrival permission while you are checked out. You are currently on campus.';
+    }
     $values['reason']               = trim($_POST['reason'] ?? '');
     $values['destination']          = trim($_POST['destination'] ?? '');
     $values['requested_out_at']     = $_POST['requested_out_at'] ?? '';
@@ -27,7 +32,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $requiredTimeField = $values['type'] === 'checkin' ? 'expected_return_at' : 'requested_out_at';
 
-    if ($values['reason'] === '' || $values['destination'] === '' || $values[$requiredTimeField] === '') {
+    if ($error !== '') {
+        // already set above
+    } elseif ($values['reason'] === '' || $values['destination'] === '' || $values[$requiredTimeField] === '') {
         $error = 'Please fill in all fields.';
     } else {
         try {
@@ -62,54 +69,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <main class="form-page">
         <h1>New special outing request</h1>
         <p>Use this if you need staff approval for something during curfew hours.</p>
-        <p>Current time: <?php require 'clock_widget.php'; ?></p>
+        <p>Current time: <?php $clock_inline = true; require 'clock_widget.php'; ?></p>
 
         <?php if ($error !== ''): ?>
             <p class="form-error"><?= h($error) ?></p>
         <?php endif; ?>
 
-        <fieldset>
-            <form method="post" action="new_request.php" id="request-form">
+        <fieldset class="form-card">
+            <form method="post" action="new_request.php" id="request-form" class="request-form">
                 <?= csrf_field() ?>
 
-                <label>
-                    <input type="radio" name="type" value="checkout" <?= $values['type'] === 'checkout' ? 'checked' : '' ?>>
-                    I need to <strong>leave</strong> during curfew (emergency / early departure)
-                </label>
-                <br>
-                <label>
-                    <input type="radio" name="type" value="checkin" <?= $values['type'] === 'checkin' ? 'checked' : '' ?>>
-                    I will <strong>arrive back</strong> during curfew (e.g. a late bus/flight) &mdash; I've already left campus normally
-                </label>
-                <br><br>
+                <div class="segmented" role="radiogroup" aria-label="Request type">
+                    <label class="seg">
+                        <input type="radio" name="type" value="checkout" <?= $values['type'] === 'checkout' ? 'checked' : '' ?>>
+                        <span>Check out</span>
+                    </label>
+                    <label class="seg">
+                        <input type="radio" name="type" value="checkin" <?= $values['type'] === 'checkin' ? 'checked' : '' ?>>
+                        <span>Check in</span>
+                    </label>
+                </div>
+                <div id="type-notice" role="alert" style="display:none;margin:8px 0;padding:10px 12px;border-radius:8px;background:#fef3c7;border:1px solid #f59e0b;color:#92400e;font-size:14px;">
+                    You can only request arrival permission while you are checked out. You are currently on campus.
+                </div>
 
-                <label>
+                <label class="form-field">
                     <span id="destination-label"><?= h(destination_field_label($values['type'])) ?></span>
                     <input type="text" name="destination" maxlength="255" value="<?= h($values['destination']) ?>" required>
                 </label>
-                <br>
-                <label>
+                <label class="form-field">
                     Reason
                     <input type="text" name="reason" maxlength="255" value="<?= h($values['reason']) ?>" required>
                 </label>
-                <br>
 
                 <div id="field-checkout" style="display:none;">
-                    <label>
+                    <label class="form-field">
                         What time do you need to leave?
                         <input type="datetime-local" name="requested_out_at" value="<?= h($values['requested_out_at']) ?>">
                     </label>
                 </div>
                 <div id="field-checkin" style="display:none;">
-                    <label>
+                    <label class="form-field">
                         What time do you expect to arrive back?
                         <input type="datetime-local" name="expected_return_at" value="<?= h($values['expected_return_at']) ?>">
                     </label>
                 </div>
-                <br>
 
-                <button type="submit">Submit request</button>
-                <a href="my_requests.php">Cancel</a>
+                <div class="form-actions">
+                    <button type="submit">Submit request</button>
+                    <a href="my_requests.php" class="btn-secondary">Cancel</a>
+                </div>
             </form>
         </fieldset>
     </main>
@@ -135,7 +144,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 destinationLabel.textContent = isCheckin ? 'Coming from' : 'Destination';
             }
 
-            radios.forEach(function (r) { r.addEventListener('change', sync); });
+            var isOut = <?= $isOut ? 'true' : 'false' ?>;
+            var notice = document.getElementById('type-notice');
+            var noticeTimer = null;
+
+            function showNotice() {
+                notice.style.display = 'block';
+                clearTimeout(noticeTimer);
+                noticeTimer = setTimeout(function () { notice.style.display = 'none'; }, 6000);
+            }
+
+            radios.forEach(function (r) {
+                r.addEventListener('change', function () {
+                    if (r.value === 'checkin' && !isOut) {
+                        document.querySelector('input[name="type"][value="checkout"]').checked = true;
+                        showNotice();
+                    } else {
+                        notice.style.display = 'none';
+                    }
+                    sync();
+                });
+            });
             sync();
         })();
     </script>

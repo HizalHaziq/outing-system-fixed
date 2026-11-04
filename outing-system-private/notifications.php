@@ -91,6 +91,27 @@ function mark_all_notifications_read(string $stdNo): bool
     return $stmt->execute(['std_no' => $stdNo]);
 }
 
+/** Marks a specific set of this student's notifications read (the ones the dropdown actually showed). */
+function mark_notifications_read_many(string $stdNo, array $ids): bool
+{
+    $ids = array_values(array_unique(array_filter(array_map('intval', $ids), fn ($i) => $i > 0)));
+    if (!$ids) {
+        return true;
+    }
+    $in   = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = get_db()->prepare(
+        "UPDATE notification SET is_read = 1 WHERE std_no = ? AND id IN ($in)"
+    );
+    return $stmt->execute(array_merge([$stdNo], $ids));
+}
+
+/** Deletes every notification belonging to this student. */
+function delete_all_notifications(string $stdNo): bool
+{
+    $stmt = get_db()->prepare('DELETE FROM notification WHERE std_no = :std_no');
+    return $stmt->execute(['std_no' => $stdNo]);
+}
+
 function delete_notification(string $stdNo, int $notificationId): bool
 {
     $stmt = get_db()->prepare(

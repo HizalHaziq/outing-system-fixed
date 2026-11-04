@@ -20,6 +20,13 @@ switch ($action) {
     case 'mark_all_read':
         $ok = mark_all_notifications_read($stdNo);
         break;
+    case 'mark_read_many':
+        $ids = array_filter(explode(',', (string) ($_POST['ids'] ?? '')), 'strlen');
+        $ok  = mark_notifications_read_many($stdNo, $ids);
+        break;
+    case 'clear_all':
+        $ok = delete_all_notifications($stdNo);
+        break;
     case 'delete':
         $ok = $id ? delete_notification($stdNo, $id) : false;
         break;

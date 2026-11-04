@@ -7,9 +7,8 @@
 //                     asking -- and only if they gave one; a checkout request
 //                     with no self-declared return time never produces a
 //                     violation, since none was ever agreed to
-//   - special/checkin:  the student, who was cleared to ARRIVE during curfew,
-//                     showed up after the approved arrival time (or was
-//                     flagged overdue and never showed at all)
+//   - special/checkin:  the student arrived during curfew, but after the
+//                     arrival time they gave (plus tolerance)
 //   - standard track: the student checked in during curfew hours with NO
 //                     matching checkin approval (standard_outing.is_late_return,
 //                     set once at check-in -- see standard_ops.php)
@@ -46,11 +45,14 @@ require_once __DIR__ . '/settings.php'; // special_tolerance_minutes()
  */
 function special_late_sql(): string
 {
-    return '((r.type = "checkout" AND r.expected_return_at IS NOT NULL
+    // unreviewed_by_staff = 1: a checkin request staff never reviewed in
+    // time. The student did their part, so it is never a violation.
+    return '(r.unreviewed_by_staff = 0 AND (
+      (r.type = "checkout" AND r.expected_return_at IS NOT NULL
        AND r.actual_return_at > DATE_ADD(r.expected_return_at, INTERVAL :tolerance_minutes_1 MINUTE))
       OR (r.type = "checkin" AND r.actual_return_at > DATE_ADD(r.expected_return_at, INTERVAL :tolerance_minutes_2 MINUTE))
-      OR EXISTS (SELECT 1 FROM outing_event ev
-                 WHERE ev.request_id = r.id AND ev.event_type = "overdue_flagged"))';
+      OR (r.type = "checkout" AND EXISTS (SELECT 1 FROM outing_event ev
+                 WHERE ev.request_id = r.id AND ev.event_type = "overdue_flagged"))))';
 }
 
 /** Bind values for the two placeholders special_late_sql() uses -- both the same tolerance. */
@@ -225,6 +227,7 @@ function get_student_outing_history(string $stdNo): array
                     WHEN r.actual_return_at IS NULL THEN "out"
                     ELSE "on_time"
                 END AS result,
+                0 AS with_arrival,
                 gl.group_id, gs.std_name AS group_lead_name
          FROM outing_request r
          LEFT JOIN outing_group_link gl ON gl.kind = "special" AND gl.ref_id = r.id
@@ -232,7 +235,8 @@ function get_student_outing_history(string $stdNo): array
          LEFT JOIN student gs ON gs.std_no = og.lead_std_no
          WHERE r.std_no = :std_no
            AND ((r.type = "checkout" AND r.actual_out_at IS NOT NULL)
-                OR (r.type = "checkin" AND r.status IN ("approved", "checked_in", "overdue")))'
+                OR (r.type = "checkin" AND r.status IN ("approved", "checked_in", "overdue")
+                    AND NOT EXISTS (SELECT 1 FROM standard_outing sx WHERE sx.arrival_request_id = r.id)))'
     );
     $stmt->execute(['std_no' => $stdNo] + special_late_params());
     $rows = $stmt->fetchAll();
@@ -241,18 +245,22 @@ function get_student_outing_history(string $stdNo): array
         'SELECT "standard" AS track, so.checked_out_at AS out_at, so.checked_in_at AS back_at,
                 so.checked_out_at AS sort_at,
                 CASE WHEN so.is_late_return = 1 THEN "late"
+                     WHEN ' . special_late_sql() . ' THEN "late"
                      WHEN so.checked_in_at IS NULL THEN "out"
                      ELSE "on_time" END AS result,
+                (so.arrival_request_id IS NOT NULL) AS with_arrival,
                 gl.group_id, gs.std_name AS group_lead_name
          FROM standard_outing so
+         LEFT JOIN outing_request r ON r.id = so.arrival_request_id
          LEFT JOIN outing_group_link gl ON gl.kind = "standard" AND gl.ref_id = so.id
          LEFT JOIN outing_group og ON og.id = gl.group_id
          LEFT JOIN student gs ON gs.std_no = og.lead_std_no
          WHERE so.std_no = :std_no'
     );
-    $stmt->execute(['std_no' => $stdNo]);
+    $stmt->execute(['std_no' => $stdNo] + special_late_params());
     $rows = array_merge($rows, $stmt->fetchAll());
 
     usort($rows, static fn(array $a, array $b): int => strcmp($b['sort_at'], $a['sort_at']));
     return $rows;
 }
+

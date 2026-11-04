@@ -9,7 +9,7 @@ require_once PRIVATE_LIB . '/ui_helpers.php';
 // outing_history.php -- a guard never sees this workflow detail.
 require_staff(['admin', 'warden']);
 
-$validStatuses = ['pending', 'approved', 'rejected', 'cancelled'];
+$validStatuses = ['pending', 'approved', 'rejected', 'cancelled', 'expired'];
 $statusFilter  = $_GET['status'] ?? '';
 if (!in_array($statusFilter, $validStatuses, true)) {
     $statusFilter = '';
@@ -81,11 +81,13 @@ $requests = get_all_requests(
                         <th>Student</th>
                         <th>Type</th>
                         <th>Destination</th>
+                        <th>Coming from</th>
                         <th>Reason</th>
                         <th>Leaving</th>
                         <th>Arriving/back by</th>
                         <th>Status</th>
                         <th>Reviewed by</th>
+                        <th>Response time</th>
                         <th>Notes</th>
                     </tr>
                 </thead>
@@ -94,12 +96,23 @@ $requests = get_all_requests(
                         <tr>
                             <td><?= h($r['std_name']) ?> (<?= h($r['std_no']) ?>)</td>
                             <td><?= h(request_type_label($r['type'])) ?></td>
-                            <td><?= h($r['destination']) ?></td>
+                            <td><?= h($r['destination'] ?? '') ?></td>
+                            <td><?= h($r['coming_from'] ?? '') ?></td>
                             <td><?= h($r['reason']) ?></td>
                             <td><?= h($r['requested_out_at'] ?? '') ?></td>
                             <td><?= h($r['expected_return_at'] ?? '') ?></td>
                             <td><?= h(status_label($r['status'])) ?></td>
                             <td><?= h($r['reviewed_by'] ?? '') ?></td>
+                            <td>
+                                <?php
+                                if ($r['reviewed_at']) {
+                                    $m = max(0, (int) floor((strtotime($r['reviewed_at']) - strtotime($r['created_at'])) / 60));
+                                    echo h($m >= 60 ? intdiv($m, 60) . 'h ' . ($m % 60) . 'm' : $m . 'm');
+                                } elseif ($r['status'] === 'expired') {
+                                    echo '<strong>Not reviewed</strong>';
+                                }
+                                ?>
+                            </td>
                             <td><?= h($r['rejection_reason'] ?? '') ?></td>
                         </tr>
                     <?php endforeach; ?>

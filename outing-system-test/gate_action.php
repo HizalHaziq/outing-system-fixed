@@ -71,16 +71,20 @@ try {
             $recordId = (int) ($_POST['record_id'] ?? 0);
             $ok = $recordId > 0 && standard_check_in($recordId, $stdNo, $guardId, $gateLocation);
             if ($ok) { group_record_movement($stdNo, 'in'); }
+            $usedArrival = $ok && standard_checkin_used_arrival($recordId);
             flash_set(
                 $ok ? 'success' : 'error',
-                $ok ? 'Student checked in (standard).' : 'Could not check in -- they may have already been checked in.'
+                $ok
+                    ? ($usedArrival
+                        ? 'Student checked in (standard outing, arrival permission used).'
+                        : 'Student checked in (standard).')
+                    : 'Could not check in -- they may have already been checked in.'
             );
             break;
 
         case 'special_check_out':
             $requestId = (int) ($_POST['request_id'] ?? 0);
             $ok = $requestId > 0 && gate_check_out($requestId, $stdNo, $guardId, $gateLocation);
-            if ($ok) { group_record_movement($stdNo, 'out'); }
             flash_set(
                 $ok ? 'success' : 'error',
                 $ok ? 'Student checked out (special).' : 'Could not check out -- the request may no longer be approved.'
@@ -90,7 +94,6 @@ try {
         case 'special_check_in':
             $requestId = (int) ($_POST['request_id'] ?? 0);
             $ok = $requestId > 0 && gate_check_in($requestId, $stdNo, $guardId, $gateLocation);
-            if ($ok) { group_record_movement($stdNo, 'in'); }
             flash_set(
                 $ok ? 'success' : 'error',
                 $ok ? 'Student checked in (special).' : 'Could not check in -- the student may no longer be checked out.'
@@ -103,7 +106,6 @@ try {
             // record to attach to (e.g. they arrived from off-campus).
             $requestId = (int) ($_POST['request_id'] ?? 0);
             $ok = $requestId > 0 && fulfill_checkin_approval_standalone($requestId, $stdNo, $guardId, $gateLocation);
-            if ($ok) { group_record_movement($stdNo, 'in'); }
             flash_set(
                 $ok ? 'success' : 'error',
                 $ok ? 'Student checked in (pre-cleared arrival).' : 'Could not check in -- the approval may no longer be active.'

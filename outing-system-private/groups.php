@@ -116,6 +116,23 @@ function count_accepted_members(int $groupId): int
     return (int) $stmt->fetchColumn();
 }
 
+/**
+ * Group outings are standard-track only. A student with a live special
+ * request can't be in a group, otherwise the two tracks clash at the gate.
+ * Live = approved/checked_out/overdue checkout, or approved/overdue arrival.
+ */
+function student_has_live_special_request(string $stdNo): bool
+{
+    $stmt = get_db()->prepare(
+        'SELECT 1 FROM outing_request
+         WHERE std_no = :s AND status IN ("approved","checked_out","overdue") LIMIT 1'
+    );
+    $stmt->execute(['s' => $stdNo]);
+    return (bool) $stmt->fetchColumn();
+}
+
+const GROUP_SPECIAL_MSG = 'Group outings are for standard outings only. A student with an approved special request cannot join a group.';
+
 // --- Lead actions ---------------------------------------------------------
 
 function create_group(string $leadStdNo): int
@@ -125,6 +142,9 @@ function create_group(string $leadStdNo): int
     }
     if (get_accepted_group_for_member($leadStdNo)) {
         throw new InvalidArgumentException('You are already a member of another group. Leave it first.');
+    }
+    if (student_has_live_special_request($leadStdNo)) {
+        throw new InvalidArgumentException('You have an approved special request. ' . GROUP_SPECIAL_MSG);
     }
     $pdo = get_db();
     $pdo->prepare(
@@ -155,6 +175,9 @@ function invite_group_member(int $groupId, string $leadStdNo, string $memberStdN
         throw new InvalidArgumentException('No active student found with that number.');
     }
 
+    if (student_has_live_special_request($memberStdNo)) {
+        throw new InvalidArgumentException($student['std_name'] . ' has an approved special request. ' . GROUP_SPECIAL_MSG);
+    }
     foreach (get_group_members($groupId) as $m) {
         if ($m['std_no'] === $memberStdNo) {
             throw new InvalidArgumentException('That student is already invited to this group.');
@@ -223,6 +246,10 @@ function respond_to_invitation(int $memberRowId, string $stdNo, bool $accept): b
         throw new InvalidArgumentException('You are already in another active group. Leave or close it first.');
     }
 
+    if ($accept && student_has_live_special_request($stdNo)) {
+        throw new InvalidArgumentException('You have an approved special request. ' . GROUP_SPECIAL_MSG);
+    }
+
     $pdo->prepare(
         'UPDATE outing_group_member SET status = :st, responded_at = NOW() WHERE id = :id AND status = "invited"'
     )->execute(['st' => $accept ? 'accepted' : 'declined', 'id' => $memberRowId]);
@@ -276,6 +303,16 @@ function group_record_movement(string $stdNo, string $direction): void
     $gid = (int) $group['id'];
     $pdo = get_db();
 
+    // Standard track only: a special-track movement (approved request /
+    // pre-cleared arrival) never counts toward a group.
+    if ($direction === 'out') {
+        $chk = $pdo->prepare('SELECT 1 FROM standard_outing WHERE std_no = :s AND checked_in_at IS NULL LIMIT 1');
+        $chk->execute(['s' => $stdNo]);
+        if (!$chk->fetchColumn()) {
+            return;
+        }
+    }
+
     if ($direction === 'out') {
         // A second trip while the group is still open restarts that student's row.
         $pdo->prepare(
@@ -294,8 +331,7 @@ function group_record_movement(string $stdNo, string $direction): void
 }
 
 /**
- * Links the trip that was just opened for this student (standard or
- * special) to the group, so outing history can show it was a group
+ * Links the standard trip that was just opened for this student to the group, so outing history can show it was a group
  * outing. Uses a link table so the existing outing tables stay as-is.
  */
 function tag_trip_with_group(int $groupId, string $stdNo): void
@@ -304,20 +340,9 @@ function tag_trip_with_group(int $groupId, string $stdNo): void
     $std = $pdo->prepare('SELECT id FROM standard_outing WHERE std_no = :s AND checked_in_at IS NULL ORDER BY id DESC LIMIT 1');
     $std->execute(['s' => $stdNo]);
     $id = $std->fetchColumn();
-    $kind = 'standard';
-    if (!$id) {
-        $sp = $pdo->prepare(
-            'SELECT id FROM outing_request
-             WHERE std_no = :s AND type = "checkout" AND status IN ("checked_out","overdue") AND actual_out_at IS NOT NULL
-             ORDER BY id DESC LIMIT 1'
-        );
-        $sp->execute(['s' => $stdNo]);
-        $id = $sp->fetchColumn();
-        $kind = 'special';
-    }
     if ($id) {
-        $pdo->prepare('INSERT IGNORE INTO outing_group_link (kind, ref_id, group_id) VALUES (:k, :r, :g)')
-            ->execute(['k' => $kind, 'r' => (int) $id, 'g' => $groupId]);
+        $pdo->prepare('INSERT IGNORE INTO outing_group_link (kind, ref_id, group_id) VALUES ("standard", :r, :g)')
+            ->execute(['r' => (int) $id, 'g' => $groupId]);
     }
 }
 
@@ -378,7 +403,7 @@ function get_group_gate_view(int $groupId): array
 
     $rows = [];
     foreach ($participants as $p) {
-        $route = resolve_gate_route($p['std_no']);
+        $route = resolve_group_route($p['std_no']);
         $l     = $log[$p['std_no']] ?? null;
         $note  = route_action_label($route);
         $tone  = 'ok';

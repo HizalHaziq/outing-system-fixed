@@ -28,7 +28,7 @@ $history    = get_student_outing_history($stdNo);
 $counts     = array_count_values(array_column($history, 'result'));
 $total      = count($history);
 $onTime     = $counts['on_time'] ?? 0;
-$violations = $counts['late'] ?? 0;
+$violations = ($counts['late'] ?? 0);
 $recent     = array_slice($history, 0, 5);
 
 $requests     = get_student_requests($stdNo);
@@ -95,6 +95,10 @@ $badges = [
                     <p class="status-card__title"><span class="badge badge-ok">Approved</span> Ready to leave</p>
                     <p>Your special request<?= !empty($specialReady['destination']) ? ' to ' . h($specialReady['destination']) : '' ?>
                        is approved. Show your QR code at the gate<?= !empty($specialReady['requested_out_at']) ? ' (requested for ' . h(fmt_dt($specialReady['requested_out_at'])) . ')' : '' ?>.</p>
+                <?php elseif ($arrival && is_unreviewed_arrival($arrival)): ?>
+                    <p class="status-card__title"><span class="badge badge-ok">Protected</span> Arrival request not reviewed</p>
+                    <p>Staff did not review your arrival request<?= !empty($arrival['expected_return_at']) ? ' (expected ' . h(fmt_dt($arrival['expected_return_at'])) . ')' : '' ?>.
+                       You will not be marked late if you arrive during this curfew. Show your QR code at the gate.</p>
                 <?php elseif ($arrival): ?>
                     <p class="status-card__title"><span class="badge badge-ok">Approved</span> Arrival approved</p>
                     <p>You're approved to arrive back after curfew<?= !empty($arrival['expected_return_at']) ? ' (expected ' . h(fmt_dt($arrival['expected_return_at'])) . ')' : '' ?>.
@@ -145,7 +149,7 @@ $badges = [
                         <?php foreach ($recent as $r): ?>
                             <?php [$badgeClass, $badgeText] = $badges[$r['result']]; ?>
                             <tr<?= $r['result'] === 'late' ? ' class="row-flag"' : '' ?>>
-                                <td><?= h(track_label($r['track'])) ?></td>
+                                <td><?= h(history_type_label($r)) ?></td>
                                 <td><?= $r['out_at'] !== null ? h(fmt_dt($r['out_at'])) : '&mdash;' ?></td>
                                 <td><?= $r['back_at'] !== null ? h(fmt_dt($r['back_at'])) : '&mdash;' ?></td>
                                 <td><span class="badge <?= $badgeClass ?>"><?= h($badgeText) ?></span></td>

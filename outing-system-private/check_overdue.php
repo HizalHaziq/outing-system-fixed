@@ -38,13 +38,25 @@ try {
         // Student-facing violation notification -- same event, own
         // channel. Best-effort like the email above: never blocks or
         // rolls back the overdue flag itself.
-        create_notification(
-            $request['std_no'],
-            'violation',
-            'A late return was recorded on your account.',
-            'outing_request',
-            (int) $request['id']
-        );
+        if ($request['type'] === 'checkin') {
+            // Not a violation by itself: it only counts as late once the
+            // student actually arrives after the expected time.
+            create_notification(
+                $request['std_no'],
+                'arrival_overdue',
+                'Your expected arrival time has passed. Please arrive during curfew or contact staff.',
+                'outing_request',
+                (int) $request['id']
+            );
+        } else {
+            create_notification(
+                $request['std_no'],
+                'violation',
+                'A late return was recorded on your account.',
+                'outing_request',
+                (int) $request['id']
+            );
+        }
     }
 
     $names = implode(', ', array_map(

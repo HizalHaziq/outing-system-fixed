@@ -26,10 +26,6 @@ declare(strict_types=1);
 // for MySQL is accurate year-round and doesn't depend on the
 // server's timezone tables being loaded (they often aren't, by
 // default, on a fresh XAMPP install).
-// Load outing-system-private/.env if present (real server env vars still win).
-require_once __DIR__ . '/env_loader.php';
-load_env(__DIR__ . '/.env');
-
 date_default_timezone_set('Asia/Kuala_Lumpur');
 
 function get_db(): PDO

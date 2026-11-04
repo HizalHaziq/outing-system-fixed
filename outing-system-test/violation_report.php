@@ -3,6 +3,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once PRIVATE_LIB . '/auth.php';
 require_once PRIVATE_LIB . '/reports.php';
+require_once PRIVATE_LIB . '/outing.php';
 require_once PRIVATE_LIB . '/curfew.php';
 require_once PRIVATE_LIB . '/ui_helpers.php';
 

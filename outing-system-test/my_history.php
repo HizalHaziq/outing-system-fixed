@@ -14,7 +14,7 @@ $history = get_student_outing_history($_SESSION['std_no']);
 $resultCounts = array_count_values(array_column($history, 'result'));
 $total      = count($history);
 $onTime     = $resultCounts['on_time'] ?? 0;
-$violations = $resultCounts['late'] ?? 0;
+$violations = ($resultCounts['late'] ?? 0);
 
 $badges = [
     'on_time'  => ['badge-ok',   'On time'],
@@ -73,7 +73,7 @@ $badges = [
                     <?php foreach ($history as $r): ?>
                         <?php [$badgeClass, $badgeText] = $badges[$r['result']]; ?>
                         <tr<?= $r['result'] === 'late' ? ' class="row-flag"' : '' ?>>
-                            <td><?= h(track_label($r['track'])) ?></td>
+                            <td><?= h(history_type_label($r)) ?></td>
                             <td><?= $r['group_id'] ? 'Group (lead: ' . h($r['group_lead_name']) . ')' : '&mdash;' ?></td>
                             <td><?= $r['out_at'] !== null ? h(fmt_dt($r['out_at'])) : '&mdash;' ?></td>
                             <td><?= $r['back_at'] !== null ? h(fmt_dt($r['back_at'])) : '&mdash;' ?></td>

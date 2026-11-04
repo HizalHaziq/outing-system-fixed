@@ -4,10 +4,13 @@ require_once __DIR__ . '/bootstrap.php';
 require_once PRIVATE_LIB . '/auth.php';
 require_once PRIVATE_LIB . '/outing.php';
 require_once PRIVATE_LIB . '/ui_helpers.php';
+require_once PRIVATE_LIB . '/settings.php';
 
 require_staff(['admin', 'warden']);
 
 $canDecide = $_SESSION['role'] === 'warden';
+// Expire arrival requests whose time already passed, so they can't be approved late.
+expire_unreviewed_requests();
 $requests = get_pending_requests();
 ?>
 <!DOCTYPE html>
@@ -35,9 +38,11 @@ $requests = get_pending_requests();
                         <th>Student</th>
                         <th>Type</th>
                         <th>Destination</th>
+                        <th>Coming from</th>
                         <th>Reason</th>
                         <th>Time</th>
                         <th>Submitted</th>
+                        <th>Waiting</th>
                         <?php if ($canDecide): ?><th>Decision</th><?php endif; ?>
                     </tr>
                 </thead>
@@ -46,7 +51,8 @@ $requests = get_pending_requests();
                         <tr>
                             <td><?= h($r['std_name']) ?> (<?= h($r['std_no']) ?>)</td>
                             <td><?= h(request_type_label($r['type'])) ?></td>
-                            <td><?= h($r['destination']) ?></td>
+                            <td><?= h($r['destination'] ?? '') ?></td>
+                            <td><?= h($r['coming_from'] ?? '') ?></td>
                             <td><?= h($r['reason']) ?></td>
                             <td>
                                 <?php if ($r['type'] === 'checkin'): ?>
@@ -59,6 +65,19 @@ $requests = get_pending_requests();
                                 <?php endif; ?>
                             </td>
                             <td><?= h($r['created_at']) ?></td>
+                            <?php
+                                $waitMin  = max(0, (int) floor((time() - strtotime($r['created_at'])) / 60));
+                                $waitText = $waitMin >= 60 ? intdiv($waitMin, 60) . 'h ' . ($waitMin % 60) . 'm' : $waitMin . 'm';
+                                $dueTs    = $r['type'] === 'checkin' ? arrival_review_deadline_ts($r) : null;
+                                $dueSoon  = $dueTs !== null && $dueTs - time() <= 1800;
+                            ?>
+                            <td<?= $dueSoon ? ' class="row-flag"' : '' ?>>
+                                <?= h($waitText) ?>
+                                <?php if ($dueTs !== null): ?>
+                                    <br><strong>Decide by <?= h(date('Y-m-d H:i', $dueTs)) ?></strong>
+                                    <?php if ($dueSoon): ?><br>Expires soon &mdash; cannot be decided after this.<?php endif; ?>
+                                <?php endif; ?>
+                            </td>
                             <?php if ($canDecide): ?>
                             <td>
                                 <form method="post" action="review_request.php">

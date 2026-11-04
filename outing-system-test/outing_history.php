@@ -101,6 +101,9 @@ if ($view === 'standard') {
                             <?php
                                 $stillOut = $r['checked_in_at'] === null;
                                 $statusLabel = $stillOut ? 'Out' : ($r['is_late_return'] ? 'Late return' : 'Returned on time');
+                                if (!$stillOut && !empty($r['arrival_request_id'])) {
+                                    $statusLabel .= ' (arrival permission used)';
+                                }
                             ?>
                             <tr<?= $r['is_late_return'] ? ' class="row-flag"' : '' ?>>
                                 <td><?= h($r['std_name']) ?> (<?= h($r['std_no']) ?>)</td>
@@ -156,6 +159,7 @@ if ($view === 'standard') {
                             <th>Group</th>
                             <th>Type</th>
                             <th>Destination</th>
+                            <th>Coming from</th>
                             <th>Reason</th>
                             <th>Leaving</th>
                             <th>Arriving/back by</th>
@@ -170,7 +174,8 @@ if ($view === 'standard') {
                                 <td><?= h($r['std_name']) ?> (<?= h($r['std_no']) ?>)</td>
                                 <td><?= $r['group_id'] ? 'Group (lead: ' . h($r['group_lead_name']) . ')' : '' ?></td>
                                 <td><?= h(request_type_label($r['type'])) ?></td>
-                                <td><?= h($r['destination']) ?></td>
+                                <td><?= h($r['destination'] ?? '') ?></td>
+                                <td><?= h($r['coming_from'] ?? '') ?></td>
                                 <td><?= h($r['reason']) ?></td>
                                 <td><?= h($r['requested_out_at'] ?? '') ?></td>
                                 <td><?= h($r['expected_return_at'] ?? '') ?></td>

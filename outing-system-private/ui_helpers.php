@@ -108,6 +108,7 @@ function status_label(string $status): string
         'checked_in'   => 'Checked in',
         'overdue'      => 'Overdue',
         'cancelled'    => 'Cancelled',
+        'expired'      => 'Expired (not reviewed)',
     ];
     return $labels[$status] ?? ucfirst($status);
 }
@@ -211,6 +212,13 @@ function track_label(string $track): string
     return $labels[$track] ?? ucfirst($track);
 }
 
+/** track_label() plus a note when a standard outing returned under an arrival permission. */
+function history_type_label(array $r): string
+{
+    $label = track_label($r['track']);
+    return !empty($r['with_arrival']) ? $label . ' (arrival permission used)' : $label;
+}
+
 /** "checkout" / "checkin" -> label used on request forms and tables. */
 function request_type_label(string $type): string
 {
@@ -218,14 +226,18 @@ function request_type_label(string $type): string
 }
 
 /**
- * The "destination" column doubles as "where did you come from" for a
- * checkin-type request (e.g. delayed bus/flight arriving after curfew) --
- * it's still stored as `destination`, just asked and labeled differently
- * depending on which type of request this is.
+ * The form asks one question whose label depends on the request type;
+ * it is stored in `destination` (checkout) or `coming_from` (checkin).
  */
 function destination_field_label(string $type): string
 {
     return $type === 'checkin' ? 'Coming from' : 'Destination';
+}
+
+/** The place a request row refers to, whichever column holds it. */
+function request_place(array $r): string
+{
+    return (string) (($r['type'] ?? 'checkout') === 'checkin' ? ($r['coming_from'] ?? '') : ($r['destination'] ?? ''));
 }
 
 /**

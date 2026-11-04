@@ -123,6 +123,8 @@ function get_recent_gate_activity(int $limit = 10): array
             JOIN outing_request r ON r.id = e.request_id
             JOIN student s ON s.std_no = r.std_no
             WHERE e.event_type IN ("checked_out", "checked_in")
+              AND NOT (e.event_type = "checked_in" AND r.type = "checkin"
+                       AND EXISTS (SELECT 1 FROM standard_outing sx WHERE sx.arrival_request_id = r.id))
 
             UNION ALL
 
@@ -135,7 +137,8 @@ function get_recent_gate_activity(int $limit = 10): array
             UNION ALL
 
             SELECT so.checked_in_at AS activity_at, "checked_in" AS action,
-                   s.std_name, s.std_no, "standard" AS track,
+                   s.std_name, s.std_no,
+                   CASE WHEN so.arrival_request_id IS NOT NULL THEN "standard_arrival" ELSE "standard" END AS track,
                    so.checked_in_by AS staff_id, so.gate_location_in AS gate_location
             FROM standard_outing so
             JOIN student s ON s.std_no = so.std_no

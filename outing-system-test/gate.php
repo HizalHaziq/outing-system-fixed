@@ -140,11 +140,22 @@ if ($stdNo !== '') {
                 <p style="color:red;"><strong>This student account is inactive.</strong></p>
             <?php endif; ?>
 
-            <?php if ($arrivalApproval && !$standardOpen): ?>
+            <?php if ($arrivalApproval && $standardOpen && is_unreviewed_arrival($arrivalApproval)): ?>
+                <p style="color:#b45309;">
+                    <strong>Arrival request not reviewed by staff</strong>
+                    (coming from <?= h($arrivalApproval['coming_from'] ?? '') ?>, expected <?= h($arrivalApproval['expected_return_at']) ?>, reason: <?= h($arrivalApproval['reason']) ?>).
+                    The student asked in time, so this check-in will NOT be flagged as late.
+                </p>
+            <?php elseif ($arrivalApproval && $standardOpen): ?>
                 <p style="color:green;">
                     <strong>Has an approved arrival permission</strong>
-                    (expected <?= h($arrivalApproval['expected_return_at']) ?>, reason: <?= h($arrivalApproval['reason']) ?>).
+                    (coming from <?= h($arrivalApproval['coming_from'] ?? '') ?>, expected <?= h($arrivalApproval['expected_return_at']) ?>, reason: <?= h($arrivalApproval['reason']) ?>).
                     This check-in will not be flagged as late.
+                </p>
+            <?php elseif ($arrivalApproval && !$specialActive): ?>
+                <p style="color:#6b7280;">
+                    Has an arrival request on file, but is <strong>not checked out</strong>, so it does not apply.
+                    It is cancelled automatically once they check out and back in.
                 </p>
             <?php endif; ?>
 
@@ -158,9 +169,7 @@ if ($stdNo !== '') {
                     <input type="hidden" name="std_no" value="<?= h($student['std_no']) ?>">
                     <button type="submit">Check in</button>
                 </form>
-                <?php if ($curfewNow && $arrivalApproval): ?>
-                    <p><em>Pre-cleared arrival (<?= h($arrivalApproval['expected_return_at']) ?>) &mdash; checking in now will NOT be flagged.</em></p>
-                <?php elseif ($curfewNow): ?>
+                <?php if ($curfewNow && !$arrivalApproval): ?>
                     <p><em>Checking in now will be flagged as a late return (curfew is active, no arrival permission on file).</em></p>
                 <?php endif; ?>
 
@@ -198,18 +207,6 @@ if ($stdNo !== '') {
                     <input type="hidden" name="request_id" value="<?= (int) $specialReady['id'] ?>">
                     <input type="hidden" name="std_no" value="<?= h($student['std_no']) ?>">
                     <button type="submit">Check out</button>
-                </form>
-
-            <?php elseif ($arrivalApproval): ?>
-                <p>No open outing record, but has an <strong>approved arrival permission</strong>
-                   (expected <?= h($arrivalApproval['expected_return_at']) ?>, reason: <?= h($arrivalApproval['reason']) ?>).</p>
-                <form method="post" action="gate_action.php"
-                      onsubmit="return confirm('Check in <?= h($student['std_name']) ?>?');">
-                    <?= csrf_field() ?>
-                    <input type="hidden" name="action" value="special_check_in_arrival">
-                    <input type="hidden" name="request_id" value="<?= (int) $arrivalApproval['id'] ?>">
-                    <input type="hidden" name="std_no" value="<?= h($student['std_no']) ?>">
-                    <button type="submit">Check in</button>
                 </form>
 
             <?php elseif ($curfewNow): ?>

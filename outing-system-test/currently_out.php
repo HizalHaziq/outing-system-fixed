@@ -98,7 +98,7 @@ usort($rows, fn($a, $b) => strcmp($b['out_since'], $a['out_since']));
                 <thead>
                     <tr>
                         <th>Student</th>
-                        <th>Destination</th>
+                        <th>Coming from</th>
                         <th>Reason</th>
                         <th>Expected</th>
                         <th>Status</th>
@@ -108,7 +108,7 @@ usort($rows, fn($a, $b) => strcmp($b['out_since'], $a['out_since']));
                     <?php foreach ($arrivals as $a): ?>
                         <tr<?= $a['status'] === 'overdue' ? ' class="row-flag"' : '' ?>>
                             <td><?= h($a['std_name']) ?> (<?= h($a['std_no']) ?>)</td>
-                            <td><?= h($a['destination']) ?></td>
+                            <td><?= h($a['coming_from'] ?? '') ?></td>
                             <td><?= h($a['reason']) ?></td>
                             <td><?= h($a['expected_return_at']) ?></td>
                             <td><?= h(status_label($a['status'])) ?></td>
@@ -131,7 +131,6 @@ usort($rows, fn($a, $b) => strcmp($b['out_since'], $a['out_since']));
                             <th>Destination</th>
                             <th>Reason</th>
                             <th>Out since</th>
-                            <th>Expected return</th>
                             <th>Status</th>
                         </tr>
                     </thead>
@@ -143,7 +142,6 @@ usort($rows, fn($a, $b) => strcmp($b['out_since'], $a['out_since']));
                                 <td><?= h($r['destination']) ?></td>
                                 <td><?= h($r['reason']) ?></td>
                                 <td><?= h($r['out_since']) ?></td>
-                                <td><?= h($r['expected']) ?></td>
                                 <td><?= h($r['status']) ?></td>
                             </tr>
                         <?php endforeach; ?>

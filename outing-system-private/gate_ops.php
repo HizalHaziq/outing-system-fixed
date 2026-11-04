@@ -120,6 +120,7 @@ function gate_check_in(int $requestId, string $stdNo, string $guardId, string $g
 
         if ($ok) {
             log_outing_event($pdo, $requestId, 'checked_in', 'staff', $guardId, "Gate: {$gateLocation}");
+            cancel_leftover_arrival_requests($pdo, $stdNo);
         }
         $pdo->commit();
         return $ok;
@@ -186,6 +187,11 @@ function get_pending_arrivals(bool $overdueOnly = false): array
  */
 function flag_overdue_students(): array
 {
+    // Same lazy tick: expire arrival requests staff never reviewed in
+    // time BEFORE the overdue scan, so they can't be approved late and
+    // then flagged overdue (the student-vs-gate mismatch).
+    expire_unreviewed_requests();
+
     $pdo = get_db();
     $flaggedIds = [];
     $tolerance  = special_tolerance_minutes();

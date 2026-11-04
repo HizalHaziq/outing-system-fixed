@@ -4,6 +4,7 @@ require_once __DIR__ . '/bootstrap.php';
 require_once PRIVATE_LIB . '/auth.php';
 require_once PRIVATE_LIB . '/profile.php';
 require_once PRIVATE_LIB . '/ui_helpers.php';
+require_once PRIVATE_LIB . '/photos.php';
 
 start_secure_session();
 $userType = $_SESSION['user_type'] ?? null;
@@ -39,43 +40,75 @@ if (!$profile) {
         <?php require 'student_header.php'; ?>
     <?php endif; ?>
 
-    <main style="padding: 16px; max-width: 480px;">
+    <main class="form-page">
         <h1>My profile</h1>
         <?= flash_render() ?>
-        <p style="color: #666;">This information comes from the university database and can't be edited here.
-           Contact your administrator if anything needs correcting.</p>
 
-        <?php if ($userType === 'student'): ?>
-            <p>
-                <strong>Student number:</strong> <?= h($profile['std_no']) ?><br>
-                <strong>Name:</strong> <?= h($profile['std_name']) ?><br>
-                <strong>IC number:</strong> <?= h($profile['ic_no']) ?><br>
-                <strong>Program:</strong> <?= h($profile['program'] ?? '-') ?><br>
-                <strong>Email:</strong> <?= h($profile['email'] ?? '-') ?><br>
-                <strong>Phone:</strong> <?= h($profile['phone'] ?? '-') ?><br>
-                <strong>Emergency contact:</strong> <?= h($profile['emergency_contact_name'] ?? '-') ?>
-                <?php if (!empty($profile['emergency_contact_phone'])): ?>
-                    (<?= h($profile['emergency_contact_phone']) ?>)
+        <?php
+        if ($userType === 'student') {
+            $cardName = (string) $profile['std_name'];
+            $cardId   = (string) $profile['std_no'];
+            $hasPhoto = student_photo_file($cardId) !== null;
+            $emergency = trim((string) ($profile['emergency_contact_name'] ?? ''));
+            if (!empty($profile['emergency_contact_phone'])) {
+                $emergency .= ' (' . $profile['emergency_contact_phone'] . ')';
+            }
+            $rows = [
+                'Program'           => $profile['program'] ?? '',
+                'IC number'         => $profile['ic_no'] ?? '',
+                'Email'             => $profile['email'] ?? '',
+                'Phone'             => $profile['phone'] ?? '',
+                'Emergency contact' => $emergency,
+            ];
+        } else {
+            $cardName = (string) $profile['name'];
+            $cardId   = (string) $profile['staff_id'];
+            $hasPhoto = false;
+            $rows = [
+                'Role'  => ucfirst((string) $profile['role']),
+                'Email' => $profile['email'] ?? '',
+            ];
+        }
+        ?>
+        <div class="profile-card">
+            <div class="profile-card__head">
+                <?php if ($hasPhoto): ?>
+                    <img class="profile-card__avatar" src="student_photo.php?std_no=<?= urlencode($cardId) ?>" alt="<?= h($cardName) ?>">
+                <?php else: ?>
+                    <div class="profile-card__avatar profile-card__avatar--initials"><?= h(initials($cardName)) ?></div>
                 <?php endif; ?>
-            </p>
+                <div class="profile-card__name"><?= h($cardName) ?></div>
+                <div class="profile-card__id">(<?= h($cardId) ?>)</div>
+            </div>
+            <div class="profile-card__body">
+                <?php foreach ($rows as $label => $value): ?>
+                    <div class="profile-card__row">
+                        <span class="profile-card__label"><?= h($label) ?> :</span>
+                        <span class="profile-card__value"><?= trim((string) $value) !== '' ? h((string) $value) : '&mdash;' ?></span>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            <p class="profile-card__note">This information comes from the university database and can't be edited here. Contact your administrator if anything needs correcting.</p>
+        </div>
 
-        <?php else: ?>
-            <p>
-                <strong>Staff ID:</strong> <?= h($profile['staff_id']) ?><br>
-                <strong>Name:</strong> <?= h($profile['name']) ?><br>
-                <strong>Role:</strong> <?= h(ucfirst($profile['role'])) ?><br>
-                <strong>Email:</strong> <?= h($profile['email'] ?? '-') ?>
-            </p>
-        <?php endif; ?>
-
-        <h2>Change password</h2>
-        <form method="post" action="change_password.php">
-            <?= csrf_field() ?>
-            <label>Current password<br><input type="password" name="current_password" autocomplete="current-password" required style="width: 100%;"></label><br><br>
-            <label>New password (min. 8 characters)<br><input type="password" name="new_password" autocomplete="new-password" required style="width: 100%;"></label><br><br>
-            <label>Confirm new password<br><input type="password" name="confirm_password" autocomplete="new-password" required style="width: 100%;"></label><br><br>
-            <button type="submit">Change password</button>
-        </form>
+        <div class="form-card">
+            <h2>Change password</h2>
+            <form method="post" action="change_password.php">
+                <?= csrf_field() ?>
+                <label class="form-field">Current password
+                    <input type="password" name="current_password" autocomplete="current-password" required>
+                </label>
+                <label class="form-field">New password (min. 8 characters)
+                    <input type="password" name="new_password" autocomplete="new-password" required>
+                </label>
+                <label class="form-field">Confirm new password
+                    <input type="password" name="confirm_password" autocomplete="new-password" required>
+                </label>
+                <div class="form-actions">
+                    <button type="submit">Change password</button>
+                </div>
+            </form>
+        </div>
     </main>
 
     <?php require 'footer.php'; ?>
