@@ -1,0 +1,45 @@
+Verification performed 4 November 2026 (Asia/Kuala_Lumpur)
+Baseline repository: ea54541
+Runtime: PHP 8.4.14; Laravel 13.40.0; MariaDB 13.0.2; Chrome 156.
+Composer platform resolves PHP 8.3.0; actual PHP 8.3 and MySQL server execution not available.
+
+php vendor/bin/phpunit (SQLite :memory:)
+OK: 39 tests, 218 assertions, 0 failures/errors/skips.
+
+DB_CONNECTION=mysql DB_DATABASE=outing_test ... php vendor/bin/phpunit
+OK: 39 tests, 218 assertions, 0 failures/errors/skips (MariaDB via PDO MySQL).
+
+APP_ENV=testing OUTING_ALLOW_TEST_RESET=1 DB_DATABASE=outing_upgrade_test ... php tests/integration/upgrade.php
+PASS: legacy upgrade retained all original columns and rows: {"outing_upgrade_test.app_setting":5,"outing_upgrade_test.login_failure":0,"outing_upgrade_test.notification":10,"outing_upgrade_test.outing_event":30,"outing_upgrade_test.outing_group":2,"outing_upgrade_test.outing_group_link":4,"outing_upgrade_test.outing_group_log":4,"outing_upgrade_test.outing_group_member":4,"outing_upgrade_test.outing_group_scan":2,"outing_upgrade_test.outing_request":13,"outing_upgrade_test.qr_secret":0,"outing_upgrade_test.staff":6,"outing_upgrade_test.standard_outing":6,"outing_upgrade_test.student":15}
+PASS: repaired enum states and nullable arrival destination.
+PASS: conflicting history aborts before domain changes.
+PASS: older schema gains authentication flags, request type and group/notification tables with matching key collations.
+PASS: canonical SQL reference and fresh migrations agree.
+
+APP_ENV=testing OUTING_ALLOW_TEST_RESET=1 DB_DATABASE=outing_test ... php tests/integration/concurrency.php
+PASS: two independent guards concurrently checking out one student create exactly one trip.
+PASS: concurrent verification consumes a QR window once.
+PASS: concurrent group batches create one atomic departure per accepted participant.
+PASS: concurrent notification delivery creates one bell notification.
+PASS: registry audit after all races.
+
+OUTING_BROWSER_DEMO=1 ... node tests/browser/workflows.cjs
+PASS: browser student QR issuance, guard verification, identity confirmation, standard checkout and return.
+PASS: browser group invitation, acceptance, Master QR, batch departure, individual returns and automatic closure.
+PASS: forced password redirect, mobile menu and CSRF rejection without a token.
+PASS: no browser JavaScript errors.
+
+Before/after screenshots: login, dashboard, gate at 1440x1000 and 390x844; 12 PNGs.
+Dashboard bounding boxes match; no horizontal overflow or page JS errors in compared screens.
+All 315 original asset/image files match their recorded SHA-256 hashes.
+Both reference schema.sql files are byte-identical.
+php artisan view:cache: passed; all 56 generated Blade PHP files passed syntax checks.
+php artisan route:cache: passed (cache cleared afterward for development).
+php vendor/bin/pint --test: passed.
+composer validate --no-check-publish: valid, with existing no-license-specified warning.
+composer audit --locked: zero security advisories and zero abandoned packages.
+git diff --check: passed.
+
+Limits: production backup/restore, real installation data, SMTP relay crash recovery,
+HTTPS phone cameras/physical identity, actual PHP 8.3/MySQL and production web-server setup
+need deployment-specific verification. No production deployment or real-data migration was performed.

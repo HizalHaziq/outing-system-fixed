@@ -1,0 +1,2 @@
+# The repository root must never be served. Configure DocumentRoot to public/.
+Require all denied

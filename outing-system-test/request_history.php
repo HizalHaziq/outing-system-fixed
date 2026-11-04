@@ -1,8 +1,5 @@
 <?php
-// Merged into outing_history.php (Standard/Special toggle). Kept as a
-// redirect so old bookmarks and links still work.
-declare(strict_types=1);
-$qs = $_GET;
-$qs['view'] = 'special';
-header('Location: outing_history.php?' . http_build_query($qs), true, 301);
-exit;
+
+// Compatibility entry point. All authentication, CSRF and actions run in Laravel.
+$_SERVER['SCRIPT_NAME'] = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/').'/index.php';
+require dirname(__DIR__).'/public/index.php';

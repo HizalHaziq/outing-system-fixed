@@ -1,8 +1,5 @@
 <?php
-declare(strict_types=1);
-require_once __DIR__ . '/bootstrap.php';
-require_once PRIVATE_LIB . '/auth.php';
-start_secure_session();
-logout();
-header('Location: login_staff.php');
-exit;
+
+// Compatibility entry point. All authentication, CSRF and actions run in Laravel.
+$_SERVER['SCRIPT_NAME'] = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/').'/index.php';
+require dirname(__DIR__).'/public/index.php';

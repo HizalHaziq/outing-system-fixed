@@ -1,0 +1,134 @@
+[
+  {
+    "label": "before",
+    "width": 1440,
+    "page": "student",
+    "url": "http://127.0.0.1:8001/student_dashboard.php",
+    "horizontalOverflow": false,
+    "header": {
+      "x": 0,
+      "y": 0,
+      "width": 1440,
+      "height": 72
+    },
+    "sidebar": {
+      "x": 0,
+      "y": 72,
+      "width": 260,
+      "height": 928
+    },
+    "main": {
+      "x": 288,
+      "y": 100,
+      "width": 1124,
+      "height": 633.75
+    },
+    "errors": []
+  },
+  {
+    "label": "before",
+    "width": 1440,
+    "page": "gate",
+    "horizontalOverflow": false,
+    "errors": []
+  },
+  {
+    "label": "before",
+    "width": 390,
+    "page": "student",
+    "url": "http://127.0.0.1:8001/student_dashboard.php",
+    "horizontalOverflow": false,
+    "header": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 60
+    },
+    "sidebar": {
+      "x": -260,
+      "y": 60,
+      "width": 260,
+      "height": 784
+    },
+    "main": {
+      "x": 8,
+      "y": 76,
+      "width": 374,
+      "height": 994.25
+    },
+    "errors": []
+  },
+  {
+    "label": "before",
+    "width": 390,
+    "page": "gate",
+    "horizontalOverflow": false,
+    "errors": []
+  },
+  {
+    "label": "after",
+    "width": 1440,
+    "page": "student",
+    "url": "http://127.0.0.1:8000/student_dashboard.php",
+    "horizontalOverflow": false,
+    "header": {
+      "x": 0,
+      "y": 0,
+      "width": 1440,
+      "height": 72
+    },
+    "sidebar": {
+      "x": 0,
+      "y": 72,
+      "width": 260,
+      "height": 928
+    },
+    "main": {
+      "x": 288,
+      "y": 100,
+      "width": 1124,
+      "height": 633.75
+    },
+    "errors": []
+  },
+  {
+    "label": "after",
+    "width": 1440,
+    "page": "gate",
+    "horizontalOverflow": false,
+    "errors": []
+  },
+  {
+    "label": "after",
+    "width": 390,
+    "page": "student",
+    "url": "http://127.0.0.1:8000/student_dashboard.php",
+    "horizontalOverflow": false,
+    "header": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 60
+    },
+    "sidebar": {
+      "x": -260,
+      "y": 60,
+      "width": 260,
+      "height": 784
+    },
+    "main": {
+      "x": 8,
+      "y": 76,
+      "width": 374,
+      "height": 994.25
+    },
+    "errors": []
+  },
+  {
+    "label": "after",
+    "width": 390,
+    "page": "gate",
+    "horizontalOverflow": false,
+    "errors": []
+  }
+]

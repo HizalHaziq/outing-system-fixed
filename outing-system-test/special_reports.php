@@ -1,7 +1,5 @@
 <?php
-// The separate special-track report was merged into the violation report
-// (one report, one question: who returned late). Kept as a redirect so old
-// bookmarks and links still work.
-declare(strict_types=1);
-header('Location: violation_report.php', true, 301);
-exit;
+
+// Compatibility entry point. All authentication, CSRF and actions run in Laravel.
+$_SERVER['SCRIPT_NAME'] = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/').'/index.php';
+require dirname(__DIR__).'/public/index.php';

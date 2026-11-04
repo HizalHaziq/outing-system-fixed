@@ -1,32 +1,8 @@
--- =====================================================================
--- Outing System — consolidated schema (latest, matches the current code)
--- Merges: schema.sql + migration_app_settings + migration_special_checkin
---         + migration_qr_groups + migration_notifications
---         + migration_auth_hardening
--- WARNING: drops and recreates the whole outing_system database (all data is lost).
--- MySQL 5.7+/MariaDB 10.x, InnoDB, utf8mb4.
--- =====================================================================
-
-SET FOREIGN_KEY_CHECKS = 0;
-
--- Drop the whole database so leftover tables (old `user`, anything with a
--- foreign key into these tables) can never block the reset.
-DROP DATABASE IF EXISTS outing_system;
-CREATE DATABASE outing_system
-    CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-USE outing_system;
-
+-- Canonical non-destructive reference schema; prefer php artisan migrate for clean installs AND upgrades.
+-- Select the database explicitly with your database client. Does not create or drop a database.
 SET NAMES utf8mb4;
 SET time_zone = '+08:00';
-SET FOREIGN_KEY_CHECKS = 1;
-
--- ------------------------------------------------------------------
--- student (imported from the university database; keyed by std_no)
--- must_change_password defaults to 1: imported/IC-number-password
--- accounts must set a new password at first login.
--- Photos are files in storage/photos/<std_no>.jpg, not DB columns.
--- ------------------------------------------------------------------
-CREATE TABLE student (
+CREATE TABLE IF NOT EXISTS student (
     id                       INT AUTO_INCREMENT PRIMARY KEY,
     std_no                   VARCHAR(20)  NOT NULL UNIQUE,
     std_name                 VARCHAR(100) NOT NULL,
@@ -46,7 +22,7 @@ CREATE TABLE student (
 -- staff (role-based: admin = view/report only, warden = approves,
 -- guard = gate). must_change_password defaults to 0.
 -- ------------------------------------------------------------------
-CREATE TABLE staff (
+CREATE TABLE IF NOT EXISTS staff (
     id                   INT AUTO_INCREMENT PRIMARY KEY,
     staff_id             VARCHAR(20)  NOT NULL UNIQUE,
     name                 VARCHAR(100) NOT NULL,
@@ -61,17 +37,18 @@ CREATE TABLE staff (
 -- ------------------------------------------------------------------
 -- app_setting: DB-backed runtime settings (see settings.php)
 -- ------------------------------------------------------------------
-CREATE TABLE app_setting (
+CREATE TABLE IF NOT EXISTS app_setting (
     setting_key   VARCHAR(64)  NOT NULL PRIMARY KEY,
     setting_value VARCHAR(255) NOT NULL,
     updated_by    VARCHAR(20)  NULL,
     updated_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-INSERT INTO app_setting (setting_key, setting_value) VALUES
+INSERT IGNORE INTO app_setting (setting_key, setting_value) VALUES
     ('curfew_start', '23:00:00'),
     ('curfew_end', '06:00:00'),
     ('special_tolerance_minutes', '15'),
+    ('arrival_review_lead_minutes', '30'),
     ('qr_refresh_seconds', '30'),
     ('allow_manual_gate_entry', '1');
 
@@ -81,13 +58,14 @@ INSERT INTO app_setting (setting_key, setting_value) VALUES
 --                     out, later closes the same request on return)
 --   type 'checkin'  = pre-cleared arrival during curfew
 -- ------------------------------------------------------------------
-CREATE TABLE outing_request (
+CREATE TABLE IF NOT EXISTS outing_request (
     id                  INT AUTO_INCREMENT PRIMARY KEY,
     std_no              VARCHAR(20) NOT NULL,
     type                ENUM('checkout','checkin') NOT NULL DEFAULT 'checkout',
     reason              VARCHAR(255) NOT NULL,
-    destination         VARCHAR(255) NULL,      -- checkout: where they are going
-    coming_from         VARCHAR(255) NULL,      -- checkin: where they are arriving from
+    destination         VARCHAR(255) NULL,
+    coming_from VARCHAR(255) NULL,
+    unreviewed_by_staff TINYINT(1) NOT NULL DEFAULT 0,
     requested_out_at    DATETIME NULL,
     expected_return_at  DATETIME NULL,
     status              ENUM('pending','approved','rejected','checked_out',
@@ -96,7 +74,6 @@ CREATE TABLE outing_request (
     reviewed_by         VARCHAR(20) NULL,
     reviewed_at         DATETIME NULL,
     rejection_reason    VARCHAR(255) NULL,
-    unreviewed_by_staff TINYINT(1) NOT NULL DEFAULT 0,  -- checkin request staff never reviewed in time
     actual_out_at       DATETIME NULL,
     actual_return_at    DATETIME NULL,
     created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -112,7 +89,7 @@ CREATE TABLE outing_request (
 -- ------------------------------------------------------------------
 -- standard_outing: STANDARD/QR track (no approval workflow)
 -- ------------------------------------------------------------------
-CREATE TABLE standard_outing (
+CREATE TABLE IF NOT EXISTS standard_outing (
     id                INT AUTO_INCREMENT PRIMARY KEY,
     std_no            VARCHAR(20) NOT NULL,
     checked_out_at    DATETIME NOT NULL,
@@ -122,7 +99,7 @@ CREATE TABLE standard_outing (
     checked_in_by     VARCHAR(20) NULL,
     gate_location_in  VARCHAR(100) NULL,
     is_late_return    TINYINT(1) NOT NULL DEFAULT 0,
-    arrival_request_id INT NULL,   -- checkin request fulfilled by this check-in
+    arrival_request_id INT NULL,
     created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_standard_student FOREIGN KEY (std_no)
         REFERENCES student(std_no),
@@ -137,7 +114,7 @@ CREATE TABLE standard_outing (
 -- ------------------------------------------------------------------
 -- outing_event: audit trail for the special track
 -- ------------------------------------------------------------------
-CREATE TABLE outing_event (
+CREATE TABLE IF NOT EXISTS outing_event (
     id             INT AUTO_INCREMENT PRIMARY KEY,
     request_id     INT NOT NULL,
     event_type     ENUM('submitted','approved','rejected','checked_out',
@@ -156,7 +133,7 @@ CREATE TABLE outing_event (
 -- ------------------------------------------------------------------
 -- login_failure: login throttling (auth.php)
 -- ------------------------------------------------------------------
-CREATE TABLE login_failure (
+CREATE TABLE IF NOT EXISTS login_failure (
     id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     account_type  ENUM('staff','student') NOT NULL,
     identifier    VARCHAR(64) NOT NULL,
@@ -169,7 +146,7 @@ CREATE TABLE login_failure (
 -- ------------------------------------------------------------------
 -- notification: student header bell (notifications.php)
 -- ------------------------------------------------------------------
-CREATE TABLE notification (
+CREATE TABLE IF NOT EXISTS notification (
     id               INT AUTO_INCREMENT PRIMARY KEY,
     std_no           VARCHAR(20)  NOT NULL,
     type             VARCHAR(30)  NOT NULL,
@@ -187,14 +164,14 @@ CREATE TABLE notification (
 -- ------------------------------------------------------------------
 -- Dynamic QR + group outings (totp.php / groups.php)
 -- ------------------------------------------------------------------
-CREATE TABLE qr_secret (
+CREATE TABLE IF NOT EXISTS qr_secret (
     subject     VARCHAR(40) NOT NULL PRIMARY KEY,   -- 'S:<std_no>' or 'G:<group_id>'
     secret      VARCHAR(64) NOT NULL,
     last_ts     BIGINT      NOT NULL DEFAULT 0,
     created_at  TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE outing_group (
+CREATE TABLE IF NOT EXISTS outing_group (
     id            INT AUTO_INCREMENT PRIMARY KEY,
     lead_std_no   VARCHAR(20) NOT NULL,
     status        ENUM('active','closed') NOT NULL DEFAULT 'active',
@@ -204,7 +181,7 @@ CREATE TABLE outing_group (
     INDEX idx_group_lead (lead_std_no, status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE outing_group_member (
+CREATE TABLE IF NOT EXISTS outing_group_member (
     id          INT AUTO_INCREMENT PRIMARY KEY,
     group_id    INT NOT NULL,
     std_no      VARCHAR(20) NOT NULL,
@@ -217,7 +194,7 @@ CREATE TABLE outing_group_member (
     INDEX idx_gm_student (std_no, status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE outing_group_scan (
+CREATE TABLE IF NOT EXISTS outing_group_scan (
     id              INT AUTO_INCREMENT PRIMARY KEY,
     group_id        INT NOT NULL,
     guard_id        VARCHAR(20) NOT NULL,
@@ -229,7 +206,7 @@ CREATE TABLE outing_group_scan (
     CONSTRAINT fk_gs_guard FOREIGN KEY (guard_id) REFERENCES staff(staff_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE outing_group_log (
+CREATE TABLE IF NOT EXISTS outing_group_log (
     group_id  INT NOT NULL,
     std_no    VARCHAR(20) NOT NULL,
     out_at    DATETIME NULL,
@@ -239,7 +216,7 @@ CREATE TABLE outing_group_log (
     CONSTRAINT fk_gl_student FOREIGN KEY (std_no) REFERENCES student(std_no)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE outing_group_link (
+CREATE TABLE IF NOT EXISTS outing_group_link (
     kind      ENUM('standard','special') NOT NULL,
     ref_id    INT NOT NULL,
     group_id  INT NOT NULL,

@@ -1,10 +1,5 @@
 <?php
-declare(strict_types=1);
-require_once __DIR__ . '/bootstrap.php';
-require_once PRIVATE_LIB . '/auth.php';
-require_once PRIVATE_LIB . '/notifications.php';
 
-require_student();
-
-header('Content-Type: application/json');
-echo json_encode(['count' => get_unread_count($_SESSION['std_no'])]);
+// Compatibility entry point. All authentication, CSRF and actions run in Laravel.
+$_SERVER['SCRIPT_NAME'] = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/').'/index.php';
+require dirname(__DIR__).'/public/index.php';
