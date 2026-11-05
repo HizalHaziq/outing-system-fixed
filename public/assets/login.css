@@ -22,15 +22,19 @@ body {
 .lg-wrap {
   position: relative; z-index: 1; min-height: 100%;
   display: flex; align-items: center; justify-content: center;
-  gap: 72px; padding: 32px 24px; flex-wrap: wrap;
+  gap: 40px; padding: 32px 24px;
 }
-.lg-brand { text-align: center; max-width: 340px; }
-.lg-brand img { max-width: 260px; width: 100%; height: auto; }
-.lg-brand h2 { margin: 18px 0 4px; font-size: 22px; color: var(--lg-brand); letter-spacing: .5px; }
+.lg-feature { width: 100%; max-width: 680px; min-width: 0; }
+.lg-brand { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 24px; }
+.lg-brand img { width: 80px; height: auto; }
+.lg-brand h2 { margin: 0 0 4px; font-size: 22px; color: var(--lg-brand); letter-spacing: .5px; }
 .lg-brand p { margin: 0; color: var(--lg-muted); font-size: 14px; }
+.lg-video { margin: 0; overflow: hidden; border: 1px solid var(--lg-border); border-radius: 18px; background: #151019; box-shadow: 0 18px 50px rgba(69, 16, 107, .18); }
+.lg-video video { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: contain; background: #000; }
+.lg-video figcaption { padding: 12px 16px; color: #fff; font-size: 14px; }
 
 .lg-card {
-  width: 100%; max-width: 440px; background: #fff; border-radius: 18px; overflow: hidden;
+  width: 100%; max-width: 440px; flex-shrink: 0; background: #fff; border-radius: 18px; overflow: hidden;
   border: 1px solid var(--lg-border);
   box-shadow: 0 18px 50px rgba(69, 16, 107, .18);
 }
@@ -60,6 +64,7 @@ body {
 
 @media (max-width: 900px) {
   .lg-wrap { gap: 24px; flex-direction: column; }
-  .lg-brand img { max-width: 180px; }
+  .lg-brand img { width: 64px; }
+  .lg-feature { max-width: 600px; }
 }
 @media (prefers-reduced-motion: reduce) { #lg-particles { display: none; } }

@@ -5,11 +5,7 @@
     <div id="lg-particles"></div>
 
     <div class="lg-wrap">
-        <div class="lg-brand">
-            <img src="images/logo.png" alt="Outing System">
-            <h2>Outing System</h2>
-            <p>Student outing monitoring</p>
-        </div>
+        @include('partials.login-video')
 
         <div class="lg-card">
 
@@ -32,7 +28,7 @@
                 <form method="post" action="login_staff.php">
                     @csrf
                     <label for="staff_id">Staff ID</label>
-                    <input type="text" id="staff_id" name="staff_id" autocomplete="username" autofocus required>
+                    <input type="text" id="staff_id" name="staff_id" autocomplete="username" required>
 
                     <label for="password">Password</label>
                     <input type="password" id="password" name="password" autocomplete="current-password" required>
